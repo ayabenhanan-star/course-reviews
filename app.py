@@ -6,7 +6,7 @@ import io
 # הגדרות עמוד
 st.set_page_config(layout="wide", page_title="קטלוג קורסי בחירה", initial_sidebar_state="collapsed")
 
-# עיצוב RTL, הסתרת תפריטים ועיצוב כרטיסים מקצועי
+# עיצוב RTL, הסתרת תפריטים ויישור גובה הכרטיסים
 st.markdown("""
     <style>
     .main { direction: RTL; text-align: right; }
@@ -14,20 +14,22 @@ st.markdown("""
     header {visibility: hidden;}
     footer {visibility: hidden;}
     
-    /* עיצוב הכרטיס הראשי */
+    /* עיצוב הכרטיס עם גובה קבוע */
     div.stButton > button {
         width: 100%;
-        height: 200px;
+        height: 180px; /* גובה קבוע לכל הכרטיסים */
         border-radius: 15px;
         border: 1px solid #e0e0e0;
         background-color: white;
         transition: all 0.3s ease;
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
-        justify-content: flex-start;
-        padding: 20px;
+        align-items: center;
+        justify-content: center; /* מרכז את הטקסט אנכית */
+        padding: 15px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        white-space: normal; /* מאפשר ירידת שורה בטקסט */
+        line-height: 1.4;
     }
     
     div.stButton > button:hover {
@@ -36,13 +38,18 @@ st.markdown("""
         transform: translateY(-2px);
     }
 
-    /* עיצוב הטקסט בתוך הכפתור/כרטיס */
-    .card-title { font-size: 20px; font-weight: bold; color: #1E3A8A; margin-bottom: 10px; display: block; width: 100%; text-align: right; }
-    .card-meta { font-size: 14px; color: #6b7280; display: block; width: 100%; text-align: right; margin-bottom: 5px; }
+    /* התאמת פונט בתוך הכפתור */
+    div.stButton > button p {
+        font-size: 18px;
+        font-weight: bold;
+        color: #1E3A8A;
+        margin: 0;
+        text-align: center;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# פונקציה להצגת החלונית הקופצת (Modal)
+# פונקציית החלונית הקופצת (נשארת ללא שינוי)
 @st.dialog("פרטי קורס מלאים")
 def show_course_details(row, df_reviews):
     course_name = row.get('שם קורס', 'ללא שם')
@@ -60,12 +67,11 @@ def show_course_details(row, df_reviews):
     
     st.write(f"**🛡️ דרישות קדם:** {row.get('דרישות קדם', '-')}")
     
-    if pd.notna(row.get('קישור לסילבוס')) and str(row.get('קישור לסילבוס')).startswith('http'):
-        st.link_button("🔗 צפייה בסילבוס המלא", row.get('קישור לסילבוס'), use_container_width=True)
+    syllabus = row.get('קישור לסילבוס')
+    if pd.notna(syllabus) and str(syllabus).startswith('http'):
+        st.link_button("🔗 צפייה בסילבוס המלא", syllabus, use_container_width=True)
     
     st.divider()
-    
-    # הצגת חוות דעת
     st.subheader("💬 חוות דעת סטודנטים")
     if df_reviews is not None:
         relevant = df_reviews[df_reviews['שם קורס'] == course_name]
@@ -76,7 +82,6 @@ def show_course_details(row, df_reviews):
             st.info("אין עדיין חוות דעת לקורס זה.")
     
     st.divider()
-    # הוספת חוות דעת
     with st.expander("✍️ הוספת חוות דעת חדשה"):
         with st.form("modal_form", clear_on_submit=True):
             user_text = st.text_area("החוות דעת שלך:")
@@ -85,9 +90,8 @@ def show_course_details(row, df_reviews):
                 payload = {"entry.1554988012": course_name, "entry.1706853258": user_text}
                 requests.post(form_url, data=payload)
                 st.success("נשלח! המידע יתעדכן בקרוב.")
-                st.balloons()
 
-# טעינת נתונים (אותם קישורים מהשלב הקודם)
+# טעינת נתונים
 SHEET_ID = "1SzycxMz3iO9_5uRTKilDzkRHcI12Mk2flpwe3t2va2w"
 COURSES_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=0"
 REVIEWS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=318705122"
@@ -106,12 +110,15 @@ df_courses = load_data(COURSES_URL)
 df_reviews = load_data(REVIEWS_URL)
 
 if df_courses is not None and not df_courses.empty:
+    # יצירת גריד אחיד
     cols = st.columns(3)
     for idx, row in df_courses.iterrows():
         with cols[idx % 3]:
-            # יצירת כפתור שמעוצב ככרטיס
-            button_label = f"{row.get('שם קורס', 'ללא שם')}\n\n{row.get('מרצה', '-')}\n{row.get('מספר קורס', '-')}"
-            if st.button(button_label, key=f"btn_{idx}"):
+            # בניית טקסט הכרטיס בצורה נקייה
+            name = row.get('שם קורס', 'ללא שם')
+            lecturer = row.get('מרצה', '-')
+            c_num = row.get('מספר קורס', '-')
+            
+            # הצגת הכפתור/כרטיס
+            if st.button(f"{name}\n{lecturer}\n{c_num}", key=f"btn_{idx}"):
                 show_course_details(row, df_reviews)
-else:
-    st.info("טוען נתונים...")
