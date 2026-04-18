@@ -14,11 +14,11 @@ st.markdown("""
     header {visibility: hidden;}
     footer {visibility: hidden;}
     
+    /* הגדרות בסיס לכרטיס */
     div.stButton > button {
         width: 100%;
         height: 180px; 
         border-radius: 15px;
-        border: 1px solid #e0e0e0;
         background-color: white;
         transition: all 0.3s ease;
         display: flex;
@@ -29,10 +29,10 @@ st.markdown("""
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         white-space: normal;
         line-height: 1.4;
+        border: 3px solid #e0e0e0; /* ברירת מחדל */
     }
     
     div.stButton > button:hover {
-        border-color: #1E3A8A;
         box-shadow: 0 8px 16px rgba(0,0,0,0.1);
         transform: translateY(-2px);
     }
@@ -44,10 +44,15 @@ st.markdown("""
         margin: 0;
         text-align: center;
     }
+
+    /* צבעים לפי סיווג - דריסה של ה-border */
+    /* ירוק פסטל לליבה */
+    div.liba-border > div.stButton > button { border-color: #C1E1C1 !important; }
+    /* סגול פסטל לבחירה */
+    div.bechira-border > div.stButton > button { border-color: #E6E6FA !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# פונקציה למשיכת נתון לפי שם עמודה חלקי (למשל "סיווג" ימצא את "סיווג קורס...")
 def get_val(row, partial_name):
     for col in row.index:
         if partial_name in col:
@@ -59,29 +64,24 @@ def get_val(row, partial_name):
 def show_course_details(row, df_reviews):
     course_name = get_val(row, 'שם קורס')
     st.subheader(f"📚 {course_name}")
-    
     col1, col2 = st.columns(2)
     with col1:
         st.write(f"**🔢 מספר קורס:** {get_val(row, 'מספר קורס')}")
         st.write(f"**👨‍🏫 מרצה:** {get_val(row, 'מרצה')}")
-        st.write(f"**🏷️ סיווג:** {get_val(row, 'סיווג')}") # ימצא את "סיווג קורס..."
+        st.write(f"**🏷️ סיווג:** {get_val(row, 'סיווג')}")
     with col2:
         st.write(f"**🎯 מסלול:** {get_val(row, 'מסלול')}")
         st.write(f"**📝 סוג מבחן:** {get_val(row, 'סוג מבחן')}")
-        st.write(f"**📊 הרכב ציון:** {get_val(row, 'הרכב הציון')}") # ימצא גם "הרכב הציון"
-    
+        st.write(f"**📊 הרכב ציון:** {get_val(row, 'הרכב הציון')}")
     st.write(f"**🛡️ דרישות קדם:** {get_val(row, 'דרישות קדם')}")
-    
     syllabus = get_val(row, 'סילבוס')
     if syllabus != "-" and str(syllabus).startswith('http'):
         st.link_button("🔗 צפייה בסילבוס המלא", syllabus, use_container_width=True)
-    
     st.divider()
     st.subheader("💬 חוות דעת סטודנטים")
     if df_reviews is not None:
         rev_course_col = next((c for c in df_reviews.columns if 'שם קורס' in c), None)
         rev_content_col = next((c for c in df_reviews.columns if 'חוות דעת' in c), None)
-        
         if rev_course_col and rev_content_col:
             relevant = df_reviews[df_reviews[rev_course_col] == course_name]
             if not relevant.empty:
@@ -89,7 +89,6 @@ def show_course_details(row, df_reviews):
                     if pd.notna(msg): st.chat_message("user").write(msg)
             else:
                 st.info("אין עדיין חוות דעת לקורס זה.")
-    
     st.divider()
     with st.expander("✍️ הוספת חוות דעת חדשה"):
         with st.form("modal_form", clear_on_submit=True):
@@ -100,7 +99,6 @@ def show_course_details(row, df_reviews):
                 requests.post(form_url, data=payload)
                 st.success("נשלח! המידע יתעדכן בקרוב.")
 
-# טעינת נתונים
 SHEET_ID = "1SzycxMz3iO9_5uRTKilDzkRHcI12Mk2flpwe3t2va2w"
 COURSES_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=0"
 REVIEWS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=318705122"
@@ -119,11 +117,22 @@ df_reviews = load_data(REVIEWS_URL)
 if df_courses is not None and not df_courses.empty:
     cols = st.columns(3)
     for idx, row in df_courses.iterrows():
+        # זיהוי סיווג לצביעת מסגרת
+        sivug = str(get_val(row, 'סיווג'))
+        border_class = ""
+        if "ליבה" in sivug:
+            border_class = "liba-border"
+        elif "בחירה" in sivug:
+            border_class = "bechira-border"
+            
         with cols[idx % 3]:
+            # עטיפת הכפתור ב-div עם הקלאס המתאים לצבע
+            st.markdown(f'<div class="{border_class}">', unsafe_allow_html=True)
             name = get_val(row, 'שם קורס')
             lecturer = get_val(row, 'מרצה')
             c_num = get_val(row, 'מספר קורס')
             if st.button(f"{name}\n{lecturer}\n{c_num}", key=f"btn_{idx}"):
                 show_course_details(row, df_reviews)
+            st.markdown('</div>', unsafe_allow_html=True)
 else:
     st.info("טוען נתונים...")
