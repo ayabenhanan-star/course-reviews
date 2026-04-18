@@ -19,10 +19,12 @@ st.markdown("""
 # מזהה הגיליון שלך
 SHEET_ID = "1nSKG17zYkHLliAsIcxl9thhMOoHnsnErViH2g6w3po0"
 
-# קישורים ישירים ללשוניות בפורמט CSV (כולל קידוד לשמות בעברית)
-COURSES_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=%D7%A0%D7%AA%D7%95%D7%A0%D7%99%20%D7%A7%D7%95%D7%A8%D7%A1%20%D7%9E%D7%95%D7%A1%D7%9B%D7%9E%D7%99%D7%9D"
-REVIEWS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=%D7%90%D7%99%D7%A1%D7%95%D7%A3%20%D7%97%D7%95%D7%95%D7%AA%20%D7%93%D7%A2%D7%AA"
+# הקישור הציבורי שגוגל נתן לך ב-Publish to Web
+BASE_PUBLISH_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkJa5lcwE0bW5takB_IF0hHeamWRyOlk5ElltpDWXgVGFUin5WEGvb9zyEBxGY8B3bUCHg9u-0bjlc/pub"
 
+# שליפת הלשוניות הספציפיות דרך הקישור הציבורי
+COURSES_URL = f"{BASE_PUBLISH_URL}?gid=1152731835&single=true&output=csv"
+REVIEWS_URL = f"{BASE_PUBLISH_URL}?gid=0&single=true&output=csv"
 @st.cache_data(ttl=10)
 def load_data(url):
     return pd.read_csv(url)
