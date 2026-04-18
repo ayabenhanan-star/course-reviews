@@ -110,7 +110,7 @@ def load_data(url):
         return pd.read_csv(io.StringIO(response.content.decode('utf-8'))) if response.status_code == 200 else None
     except: return None
 
-st.title("🎓 קטלוג קורסי בחירה")
+st.title("🎓 ניהול ידע - בחירת קורסים")
 df_courses = load_data(COURSES_URL)
 df_reviews = load_data(REVIEWS_URL)
 
